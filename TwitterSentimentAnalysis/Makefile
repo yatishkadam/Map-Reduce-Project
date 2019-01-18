@@ -2,12 +2,13 @@
 
 # Customize these paths for your environment.
 # -----------------------------------------------------------
-hadoop.root=/usr/local/hadoop
-jar.name=twitter-ShortestPath-mr-1.0.jar
+hadoop.root=/users/vaibhavkarnam/hadoop-2.9.1
+jar.name=twitter-SentimentAnalysis-mr-1.0.jar
 jar.path=target/${jar.name}
-job.name=wc.TwitterShortestPath
+job.name=wc.TrainingEnsemble
 local.input=input
 local.output=output
+local.params=training
 # Pseudo-Cluster Execution
 hdfs.user.name=vaibhav
 hdfs.input=input
@@ -15,12 +16,14 @@ hdfs.output=output
 # AWS EMR Execution
 aws.emr.release=emr-5.17.0
 aws.region=us-east-1
-aws.bucket.name=vaibhav-shortestpath
+aws.bucket.name=twittersentimentanalysisproject
 aws.subnet.id=subnet-395fd217
-aws.input=input
-aws.output=output_9
+aws.input=inputTrain
+aws.output=outputlgTrain10
+aws.training=training
+aws.k = 3
 aws.log.dir=log
-aws.num.nodes=5
+aws.num.nodes=10
 aws.instance.type=m4.large
 # -----------------------------------------------------------
 
@@ -36,7 +39,7 @@ clean-local-output:
 # Make sure Hadoop  is set up (in /etc/hadoop files) for standalone operation (not pseudo-cluster).
 # https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/SingleCluster.html#Standalone_Operation
 local: jar clean-local-output
-	${hadoop.root}/bin/hadoop jar ${jar.path} ${job.name} ${local.input} ${local.output}
+	${hadoop.root}/bin/hadoop jar ${jar.path} ${job.name} ${local.input} ${local.output} ${local.params} 3
 
 # Start HDFS
 start-hdfs:
@@ -110,11 +113,11 @@ upload-app-aws:
 # Main EMR launch.
 aws: jar upload-app-aws delete-output-aws
 	aws emr create-cluster \
-		--name "Shortest_Path_Twitter_MR" \
+		--name "TwitterSentimentAnalysis" \
 		--release-label ${aws.emr.release} \
 		--instance-groups '[{"InstanceCount":${aws.num.nodes},"InstanceGroupType":"CORE","InstanceType":"${aws.instance.type}"},{"InstanceCount":1,"InstanceGroupType":"MASTER","InstanceType":"${aws.instance.type}"}]' \
 	    --applications Name=Hadoop \
-	    --steps '[{"Args":["${job.name}","s3://${aws.bucket.name}/${aws.input}","s3://${aws.bucket.name}/${aws.output}"],"Type":"CUSTOM_JAR","Jar":"s3://${aws.bucket.name}/${jar.name}","ActionOnFailure":"TERMINATE_CLUSTER","Name":"Custom JAR"}]' \
+	    --steps '[{"Args":["${job.name}","s3://${aws.bucket.name}/${aws.input}","s3://${aws.bucket.name}/${aws.output}","s3://${aws.bucket.name}/${aws.training}","${aws.k}"],"Type":"CUSTOM_JAR","Jar":"s3://${aws.bucket.name}/${jar.name}","ActionOnFailure":"TERMINATE_CLUSTER","Name":"Custom JAR"}]' \
 		--log-uri s3://${aws.bucket.name}/${aws.log.dir} \
 		--use-default-roles \
 		--enable-debugging \

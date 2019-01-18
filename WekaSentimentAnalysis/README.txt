@@ -5,7 +5,6 @@ Fall 2018
 Code author
 -----------
 Vaibhav Karnam
-yatish kadam
 
 Installation
 ------------
