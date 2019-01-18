@@ -1,0 +1,1 @@
+/tmp/hadoop-yatish/mapred/local/1541634963566/followerCentroid.txt
